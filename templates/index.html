@@ -1,28 +1,31 @@
-
-
-
 <head>
     <meta charset="UTF-8">
     <title>ikun discussion</title>
     <link rel="stylesheet" type="text/css" href="/static/style.css"/>
     <link rel="shortcut icon" type="image/x-icon" href="/static/ikun.ico">
 </head>
-
 <body>
+
 <div class="title">
     <h1>IKUN discussion</h1>
+    <p id="paragraph"></p>
 </div>
 <div class="image_div">
-    <img src="/static/basketball.jpg" alt="It's an ikun" class="my_image"/>
+    <img src="/static/image/basketball.jpg" alt="It's an ikun" class="my_image"/>
 </div>
-<div id="somejavasripteffect">
-    <p>This text is added by javasrcipt 😅 ,thank you</p>
-    <!--黄豆流汗是我最后的倔强 --自来也-->
-</div>
+
 <div class="function">
     <h1>Ji Ni Tai Mei</h1>
-    <script src="/static/functions.js"></script>
+    <button id="post-button">Make Post</button>
 </div>
+<div class="views">
+    <h1>All Posts</h1>
+    <ul>
+        {% for post in posts %}
+            <li><a href="/post/{{ post._id }}">{{ post.title }}</a></li>
+        {% endfor %}
+    </ul>
+</div>
+<script src="/static/functions.js"></script>
 </body>
-
 </html>
