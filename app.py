@@ -48,9 +48,10 @@ def submit_post():
     if flask.request.method == 'POST':
         auth_token=flask.request.cookies.get('auth_token')
         current_user="Guest"
-        user=user_collection.find_one({'auth_token': hashlib.sha256(auth_token.encode()).hexdigest()})
-        if user:
-            current_user=user['username']
+        if auth_token:
+            user=user_collection.find_one({'auth_token': hashlib.sha256(auth_token.encode()).hexdigest()})
+            if user:
+                current_user=user['username']
         title = flask.request.form['title']
         content = flask.request.form['content']
         post_collection.insert_one({'title': title,'content': content,'user':current_user}).inserted_id
@@ -90,18 +91,20 @@ def login():
 @app.route('/logout', methods=['POST'])
 def logout():
     auth_token=flask.request.cookies.get('auth_token')
-    user=user_collection.find_one({'auth_token': hashlib.sha256(auth_token.encode()).hexdigest()})
-    if user:
-        user_collection.update_one({'auth_token': hashlib.sha256(auth_token.encode()).hexdigest()}, {'$unset': {'auth_token': 1}})
+    if auth_token:
+        user=user_collection.find_one({'auth_token': hashlib.sha256(auth_token.encode()).hexdigest()})
+        if user:
+            user_collection.update_one({'auth_token': hashlib.sha256(auth_token.encode()).hexdigest()}, {'$unset': {'auth_token': 1}})
     return flask.redirect(flask.url_for('index'))
 
 @app.route('/comment/<post_id>', methods=['POST'])
 def comment_post(post_id):
     auth_token=flask.request.cookies.get('auth_token')
     current_user="Guest"
-    user=user_collection.find_one({'auth_token': hashlib.sha256(auth_token.encode()).hexdigest()})
-    if user:
-        current_user=user['username']
+    if auth_token:
+        user=user_collection.find_one({'auth_token': hashlib.sha256(auth_token.encode()).hexdigest()})
+        if user:
+            current_user=user['username']
     content = flask.request.form['content']
 
     post=post_collection.find_one({'_id': ObjectId(post_id)})
