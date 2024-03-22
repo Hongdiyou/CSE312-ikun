@@ -77,7 +77,7 @@ def login():
 
         user = user_collection.find_one({'username': username})
         if not user or not bcrypt.checkpw(password.encode('utf-8'), user['password']):
-            return "Invalid username or password", 401
+            return flask.redirect(flask.url_for('index'))
 
         token=secrets.token_hex(16)
         auth_token=hashlib.sha256(token.encode()).hexdigest()
