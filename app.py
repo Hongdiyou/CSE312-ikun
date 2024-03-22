@@ -24,8 +24,8 @@ def index():
     current_user="Guest"
     if auth_token:
         user=user_collection.find_one({'auth_token': hashlib.sha256(auth_token.encode()).hexdigest()})
-    if user:
-        current_user=user['username']
+        if user:
+            current_user=user['username']
 
     posts=post_collection.find({},{'title': 1})
     return flask.render_template('index.html',posts=posts,current_user=current_user)
