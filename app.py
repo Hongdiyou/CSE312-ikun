@@ -6,7 +6,6 @@ from bson import ObjectId
 import bcrypt
 import secrets
 import hashlib
-import html
 #这是flask框架添加route的方式和我们作业的add_route类似，例如这里的'/'对应了我们作业的'/' 也是root path
 #这会response html文件.
 
@@ -52,8 +51,8 @@ def submit_post():
         user=user_collection.find_one({'auth_token': hashlib.sha256(auth_token.encode()).hexdigest()})
         if user:
             current_user=user['username']
-        title = html.escape(flask.request.form['title'])
-        content = html.escape(flask.request.form['content'])
+        title = flask.request.form['title']
+        content = flask.request.form['content']
         post_collection.insert_one({'title': title,'content': content,'user':current_user}).inserted_id
         return flask.redirect(flask.url_for('index'))
 
