@@ -22,7 +22,8 @@ def index():
 
     auth_token=flask.request.cookies.get('auth_token')
     current_user="Guest"
-    user=user_collection.find_one({'auth_token': hashlib.sha256(auth_token.encode()).hexdigest()})
+    if auth_token:
+        user=user_collection.find_one({'auth_token': hashlib.sha256(auth_token.encode()).hexdigest()})
     if user:
         current_user=user['username']
 
