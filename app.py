@@ -6,6 +6,7 @@ from bson import ObjectId
 import bcrypt
 import secrets
 import hashlib
+import html
 #这是flask框架添加route的方式和我们作业的add_route类似，例如这里的'/'对应了我们作业的'/' 也是root path
 #这会response html文件.
 
@@ -40,15 +41,20 @@ def makepost():
 
 @app.route('/post/<post_id>')
 def view_post(post_id):
-    post = db.posts.find_one({'_id': ObjectId(post_id)})
+    post=db.posts.find_one({'_id': ObjectId(post_id)})
     return flask.render_template('post.html', post=post)
 
 @app.route('/submitpost', methods=['POST'])
 def submit_post():
     if flask.request.method == 'POST':
-        title = flask.request.form['title']
-        content = flask.request.form['content']
-        post_collection.insert_one({'title': title, 'content': content}).inserted_id
+        auth_token=flask.request.cookies.get('auth_token')
+        current_user="Guest"
+        user=user_collection.find_one({'auth_token': hashlib.sha256(auth_token.encode()).hexdigest()})
+        if user:
+            current_user=user['username']
+        title = html.escape(flask.request.form['title'])
+        content = html.escape(flask.request.form['content'])
+        post_collection.insert_one({'title': title,'content': content,'user':current_user}).inserted_id
         return flask.redirect(flask.url_for('index'))
 
 @app.route('/register', methods=['POST'])
@@ -90,6 +96,21 @@ def logout():
         user_collection.update_one({'auth_token': hashlib.sha256(auth_token.encode()).hexdigest()}, {'$unset': {'auth_token': 1}})
     return flask.redirect(flask.url_for('index'))
 
+@app.route('/comment/<post_id>', methods=['POST'])
+def comment_post(post_id):
+    auth_token=flask.request.cookies.get('auth_token')
+    current_user="Guest"
+    user=user_collection.find_one({'auth_token': hashlib.sha256(auth_token.encode()).hexdigest()})
+    if user:
+        current_user=user['username']
+    content = flask.request.form['content']
+
+    post=post_collection.find_one({'_id': ObjectId(post_id)})
+    if not post:
+        return "Post not found", 404
+
+    post_collection.update_one({'_id': ObjectId(post_id)}, {'$push': {'comments': {'content': content, 'user': current_user}}})
+    return flask.redirect(flask.url_for('view_post', post_id=post_id))
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=8080)
