@@ -9,7 +9,7 @@
 </head>
 <body>
     <h1>{{ post.title }}</h1>
-    <p class="post_body">{{ post.content }}</p>
+    <div class="post_body">{{ post.content | safe }}</div>
     <p>Posted by {{ post.user }}</p>
     <a href="/">Back to Home</a>
     <hr>

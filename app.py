@@ -6,6 +6,8 @@ from bson import ObjectId
 import bcrypt
 import secrets
 import hashlib
+import os
+from werkzeug.utils import secure_filename
 #这是flask框架添加route的方式和我们作业的add_route类似，例如这里的'/'对应了我们作业的'/' 也是root path
 #这会response html文件.
 
@@ -13,10 +15,12 @@ mongo_client=pymongo.MongoClient("mongodb://mongo:27017/postDB")
 db=mongo_client['postDB']
 post_collection=db['posts']
 user_collection=db['users']
-app = flask.Flask(__name__)
+app=flask.Flask(__name__)
+if not os.path.exists('media'):
+    os.makedirs('media')
 
 
-talisman = Talisman(app)
+talisman=Talisman(app)
 @app.route('/')
 def index():
 
@@ -52,31 +56,48 @@ def submit_post():
             user=user_collection.find_one({'auth_token': hashlib.sha256(auth_token.encode()).hexdigest()})
             if user:
                 current_user=user['username']
-        title = flask.request.form['title']
-        content = flask.request.form['content']
+        title=flask.request.form['title']
+        content=flask.request.form['content']
+        
+
+        if 'image' in flask.request.files:
+            image=flask.request.files['image']
+            if image.filename != '':
+                if '/' not in image.filename:
+                    filename=secure_filename(image.filename)
+                    image.save(os.path.join('media', filename))
+                    image_url=flask.url_for('uploaded_file', filename=filename)
+                    content += f'<img src="{image_url}" alt="Uploaded Image">'
         post_collection.insert_one({'title': title,'content': content,'user':current_user}).inserted_id
         return flask.redirect(flask.url_for('index'))
 
+@app.route('/media/<filename>')
+def uploaded_file(filename):
+    return flask.send_from_directory('media', filename)
+
+
+
+
 @app.route('/register', methods=['POST'])
 def register():
-    username = flask.request.form['username_reg']
-    password = flask.request.form['password_reg']
-    con_password = flask.request.form['confirm_password_reg']
+    username=flask.request.form['username_reg']
+    password=flask.request.form['password_reg']
+    con_password=flask.request.form['confirm_password_reg']
     if password != con_password:
         return flask.redirect(flask.url_for('index'))
     if user_collection.find_one({'username': username}):
         return flask.redirect(flask.url_for('index'))
-    hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+    hashed_password=bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
     user_collection.insert_one({'username': username, 'password': hashed_password})
     return flask.redirect(flask.url_for('index'))
 
 @app.route('/login', methods=['POST'])
 def login():
     if flask.request.method == 'POST':
-        username = flask.request.form['username_login']
-        password = flask.request.form['password_login']
+        username=flask.request.form['username_login']
+        password=flask.request.form['password_login']
 
-        user = user_collection.find_one({'username': username})
+        user=user_collection.find_one({'username': username})
         if not user or not bcrypt.checkpw(password.encode('utf-8'), user['password']):
             return flask.redirect(flask.url_for('index'))
 
@@ -84,8 +105,8 @@ def login():
         auth_token=hashlib.sha256(token.encode()).hexdigest()
         user_collection.update_one({'username': username}, {'$set': {'auth_token': auth_token}})
 
-        response = flask.make_response(flask.redirect(flask.url_for('index')))
-        response.set_cookie('auth_token', token, httponly=True)
+        response=flask.make_response(flask.redirect(flask.url_for('index')))
+        response.set_cookie('auth_token', token, httponly=True, max_age=3600)
         return response
 
 @app.route('/logout', methods=['POST'])
@@ -105,7 +126,7 @@ def comment_post(post_id):
         user=user_collection.find_one({'auth_token': hashlib.sha256(auth_token.encode()).hexdigest()})
         if user:
             current_user=user['username']
-    content = flask.request.form['content']
+    content=flask.request.form['content']
 
     post=post_collection.find_one({'_id': ObjectId(post_id)})
     if not post:
