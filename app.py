@@ -8,19 +8,31 @@ import secrets
 import hashlib
 import os
 from werkzeug.utils import secure_filename
+from flask_socketio import SocketIO, emit
 #这是flask框架添加route的方式和我们作业的add_route类似，例如这里的'/'对应了我们作业的'/' 也是root path
 #这会response html文件.
+
+csp = {
+    'default-src': '\'self\'',
+    'script-src': [
+        '\'self\'',
+        'cdnjs.cloudflare.com',
+        '\'unsafe-inline\'' 
+    ]
+}
+
 
 mongo_client=pymongo.MongoClient("mongodb://mongo:27017/postDB")
 db=mongo_client['postDB']
 post_collection=db['posts']
 user_collection=db['users']
+message_collection=db['message']
 app=flask.Flask(__name__)
 if not os.path.exists('media'):
     os.makedirs('media')
 
-
-talisman=Talisman(app)
+socketio = SocketIO(app)
+talisman = Talisman(app, content_security_policy=csp)
 @app.route('/')
 def index():
 
@@ -75,7 +87,26 @@ def submit_post():
 def uploaded_file(filename):
     return flask.send_from_directory('media', filename)
 
+@app.route('/chatroom')
+def chatroom():
+    return flask.render_template('chatroom.html')
 
+@socketio.on('message')
+def handle_message(data):
+    auth_token = flask.request.cookies.get('auth_token')
+    username = "Guest"
+    if auth_token:
+        user = user_collection.find_one({'auth_token': hashlib.sha256(auth_token.encode()).hexdigest()})
+        if user:
+            username = user['username']
+    message_collection.insert_one({'username': username, 'message': data})
+    emit('message', {'username': username, 'message': data}, broadcast=True)
+
+@socketio.on('connect')
+def handle_connect():
+    messages = message_collection.find()
+    for message in messages:
+        emit('message', {'username': message['username'], 'message': message['message']})
 
 
 @app.route('/register', methods=['POST'])
@@ -136,5 +167,6 @@ def comment_post(post_id):
     return flask.redirect(flask.url_for('view_post', post_id=post_id))
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=8080)
+    #app.run(debug=True, host='0.0.0.0', port=8080)
+    socketio.run(app, debug=True, host='0.0.0.0', port=8080, allow_unsafe_werkzeug=True)
     #ikun,启动！

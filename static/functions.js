@@ -6,7 +6,7 @@ function MakePost(event) {
 
 function welcome() {
 
-    document.getElementById("paragraph").innerHTML += "<br/>This text was added by JavaScript 😅, please upload image in making the post";
+    document.getElementById("paragraph").innerHTML += "<br/>This text was added by JavaScript 😅, please upload image in making the post. Enter chatroom for WebSocket connection";
 
     document.addEventListener("DOMContentLoaded", function() {
         const postButton = document.getElementById("post-button");
