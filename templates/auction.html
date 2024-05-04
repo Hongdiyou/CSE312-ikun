@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" type="text/css" href="/static/style.css"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" type="image/x-icon" href="/static/ikun.ico">
+    <title>Auction</title>
+</head>
+<body>
+    <h1>Auction Items</h1>
+    <div class="add-item-button">
+        <a href="/additem"><button>Add Item for Auction</button></a>
+    </div>
+    
+    <div class="auction-items">
+        {% for item in auction_items %}
+        <div class="auction-item">
+            <img src="{{ item.image_url }}" alt="{{ item.title }}" class="auction-item-image">
+            <h2>{{ item.title }}</h2>
+            <p>{{ item.description }}</p>
+            <p>Current Bid: ${{ item.current_bid }}</p>
+            <a href="/auction/{{ item.title }}"><button>Make Bid</button></a>
+        </div>
+        {% endfor %}
+    </div>
+
+    
+</body>
+</html>

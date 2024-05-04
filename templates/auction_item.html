@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auction Item Detail</title>
+    <link rel="stylesheet" type="text/css" href="/static/style.css"/>
+    <link rel="shortcut icon" type="image/x-icon" href="/static/ikun.ico">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            function updateCountdown() {
+                var remainingTime = Math.max(0, Math.floor((new Date("{{ item.end_time }}") - new Date()) / 1000));
+                var minutes = Math.floor(remainingTime / 60);
+                var seconds = remainingTime % 60;
+                $('#countdown').text(minutes + "m " + seconds + "s");
+            }
+
+            updateCountdown();
+            setInterval(updateCountdown, 1000);
+        });
+    </script>
+</head>
+<body>
+    <div class="auction-item-detail">
+        <img src="{{ item.image_url }}" alt="{{ item.title }}" class="auction-item-detail-image">
+        <h1>{{ item.title }}</h1>
+        <p>{{ item.description }}</p>
+        <p>Seller: {{ item.seller }}</p>
+        <p>Current Bid: ${{ item.current_bid }}</p>
+        <p>Remaining Time: <span id="countdown"></span></p>
+        <p>Ends at: {{ item.end_time.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+        <form method="POST" action="/placebid">
+            <input type="hidden" name="item_id" value="{{ item._id }}">
+            <p>Highest Bidder: {{ item.bidder }}</p>
+            <label for="bid_amount">Bid Amount:</label>
+            <input type="number" name="bid_amount" id="bid_amount" required>
+            <button type="submit">Place Bid</button>
+        </form>        
+    </div>
+</body>
+</html>

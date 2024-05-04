@@ -9,6 +9,8 @@ import hashlib
 import os
 from werkzeug.utils import secure_filename
 from flask_socketio import SocketIO, emit
+from datetime import datetime, timedelta
+
 #这是flask框架添加route的方式和我们作业的add_route类似，例如这里的'/'对应了我们作业的'/' 也是root path
 #这会response html文件.
 
@@ -17,6 +19,7 @@ csp = {
     'script-src': [
         '\'self\'',
         'cdnjs.cloudflare.com',
+        'ajax.googleapis.com',
         '\'unsafe-inline\'' 
     ]
 }
@@ -27,6 +30,7 @@ db=mongo_client['postDB']
 post_collection=db['posts']
 user_collection=db['users']
 message_collection=db['message']
+auction_collection = db['auction']
 app=flask.Flask(__name__)
 if not os.path.exists('media'):
     os.makedirs('media')
@@ -165,6 +169,80 @@ def comment_post(post_id):
 
     post_collection.update_one({'_id': ObjectId(post_id)}, {'$push': {'comments': {'content': content, 'user': current_user}}})
     return flask.redirect(flask.url_for('view_post', post_id=post_id))
+
+
+
+
+@app.route('/additem', methods=['GET', 'POST'])
+def add_item():
+    if flask.request.method == 'POST':
+        auth_token=flask.request.cookies.get('auth_token')
+        current_user="Guest"
+        if auth_token:
+            user=user_collection.find_one({'auth_token': hashlib.sha256(auth_token.encode()).hexdigest()})
+            if user:
+                current_user=user['username']
+        if current_user!='Guest':
+            end_time = datetime.now() + timedelta(hours=2)
+            end_time_str = flask.request.form['end_time']
+            end_time = datetime.strptime(end_time_str, '%Y-%m-%dT%H:%M')
+            title = flask.request.form['title']
+            description = flask.request.form['description']
+            if 'image' in flask.request.files:
+                image = flask.request.files['image']
+                if image.filename != '':
+                    if '/' not in image.filename:
+                        filename = secure_filename(image.filename)
+                        image.save(os.path.join('media', filename))
+                        image_url = flask.url_for('uploaded_file', filename=filename)
+                        auction_collection.insert_one({'title': title, 'description': description, 'image_url': image_url, 'current_bid': 0,'seller':current_user,'end_time':end_time,'bidder':'No one'})
+                        return flask.redirect(flask.url_for('auction'))
+            auction_collection.insert_one({'title': title, 'description': description,'current_bid': 0,'seller':current_user,'end_time':end_time,'bidder':'No one'})
+        return flask.redirect(flask.url_for('auction'))
+    return flask.render_template('additem.html')
+
+@app.route('/auction')
+def auction():
+    auction_items = auction_collection.find()
+    return flask.render_template('auction.html', auction_items=auction_items)
+
+@app.route('/auction/<item_id>', methods=['GET', 'POST'])
+def view_auction_item(item_id):
+
+    auction_item = auction_collection.find_one({'title': item_id})
+    if auction_item:
+        end_time = auction_item.get('end_time')
+        remaining_time = end_time - datetime.now()
+        return flask.render_template('auction_item.html',item=auction_item,remaining_time_seconds=remaining_time.total_seconds())
+    else:
+        return flask.redirect(flask.url_for('auction'))
+
+@app.route('/placebid', methods=['POST'])
+def place_bid():
+    if flask.request.method == 'POST':
+        auth_token=flask.request.cookies.get('auth_token')
+        current_user="Guest"
+        if auth_token:
+            user=user_collection.find_one({'auth_token': hashlib.sha256(auth_token.encode()).hexdigest()})
+            if user:
+                current_user=user['username']
+        item_id = flask.request.form.get('item_id')
+        bid_amount = float(flask.request.form.get('bid_amount'))
+        item = auction_collection.find_one({'_id': ObjectId(item_id)})
+        if datetime.now() > item['end_time']:
+            return "This auction has ended", 400
+        
+        if bid_amount > item.get('current_bid', 0):
+            if current_user!='Guest':
+                if item['seller']==current_user:
+                    return "you cannot make bid to your own item", 400
+                auction_collection.update_one({'_id': ObjectId(item_id)}, {'$set': {'current_bid': bid_amount}})
+                auction_collection.update_one({'_id': ObjectId(item_id)}, {'$set': {'bidder': current_user}})
+            return flask.redirect(flask.url_for('auction'))
+        else:
+            return "Bid amount must be higher than the current bid", 400
+
+
 
 if __name__ == '__main__':
     #app.run(debug=True, host='0.0.0.0', port=8080)
