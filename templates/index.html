@@ -1,3 +1,5 @@
+<!DOCTYPE html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>ikun discussion</title>
@@ -67,6 +69,24 @@
 
 <div class="views">
     <h1>All Posts</h1>
+    <form id="search-form" action="/" method="POST">
+        <label for="search-query">Search:</label>
+        <input type="text" id="search-query" name="search_query">
+        <input type="submit" value="Search">
+    </form>
+    <button class="filter-button" onclick="toggleFilter()">Filter</button>
+
+    <button type="button" onclick="clearFilter()">Clear Filter</button>
+    <form id="filter-form" action="/" method="POST">
+        <label>Filter by Tags:</label><br>
+        {% for tag in tags %}
+            <input type="checkbox" name="filter_tags" value="{{ tag }}">{{ tag }}<br>
+        {% endfor %}
+        <br>
+        <input type="submit" value="Apply">
+    </form>
+
+
     <ul>
         {% for post in posts %}
             <li><a href="/post/{{ post._id }}">{{ post.title }}</a></li>
@@ -74,8 +94,24 @@
     </ul>
 </div>
 
-
-
 <script src="/static/functions.js"></script>
+
+<script>
+    window.onload = function() {
+        document.getElementById('filter-form').style.display = 'none';
+    };
+
+    function toggleFilter() {
+        var filterForm = document.getElementById('filter-form');
+        if (filterForm.style.display === 'none') {
+            filterForm.style.display = 'block';
+        } else {
+            filterForm.style.display = 'none';
+        }
+    }
+    function clearFilter() {
+        window.location.href = "/";
+    }
+</script>
 </body>
 </html>

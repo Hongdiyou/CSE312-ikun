@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,6 +6,18 @@
     <title>Make Post</title>
     <link rel="stylesheet" type="text/css" href="/static/style.css"/>
     <link rel="shortcut icon" type="image/x-icon" href="/static/ikun.ico">
+    <style>
+        .tag-checkbox {
+            display: inline-block;
+            margin-right: 10px;
+        }
+        #other-tag-input {
+            display: none;
+        }
+        .media-upload {
+            margin-top: 20px;
+        }
+    </style>
 </head>
 <body>
     <h1>Make a Post</h1>
@@ -15,9 +26,56 @@
         <input type="text" id="title" name="title"><br>
         <label for="content">Content:</label><br>
         <textarea id="content" name="content" rows="4" cols="50"></textarea><br><br>
-        <label for="image">Upload Media:</label><br>
-        <input type="file" id="image" name="image"><br><br>
+        <label>Tags:</label><br>
+        <div id="tag-checkboxes">
+            <input type="checkbox" id="tag_technology" class="tag-checkbox" name="tags" value="technology">
+            <label for="tag_technology">Technology</label>
+
+            <input type="checkbox" id="tag_school" class="tag-checkbox" name="tags" value="school">
+            <label for="tag_school">School</label>
+
+            <input type="checkbox" id="tag_art" class="tag-checkbox" name="tags" value="art">
+            <label for="tag_art">Art</label>
+
+            <input type="checkbox" id="tag_music" class="tag-checkbox" name="tags" value="music">
+            <label for="tag_music">Music</label>
+
+            <input type="checkbox" id="tag_game" class="tag-checkbox" name="tags" value="game">
+            <label for="tag_game">Game</label>
+
+            <input type="checkbox" id="tag_life" class="tag-checkbox" name="tags" value="life">
+            <label for="tag_life">Life</label>
+
+            <input type="checkbox" id="tag_food" class="tag-checkbox" name="tags" value="food">
+            <label for="tag_food">Food</label>
+
+            <input type="checkbox" id="tag_other" class="tag-checkbox" name="tags" value="other">
+            <label for="tag_other">Customize tag</label>
+        </div><br>
+        <input type="text" id="other-tag-input" name="other_tag" placeholder="Enter your tag">
+        <div class="media-upload">
+            <label for="image">Upload Media:</label><br>
+            <input type="file" id="image" name="image"><br><br>
+        </div>
         <input type="submit" value="Submit">
     </form>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var otherTagInput = document.getElementById('other-tag-input');
+            var otherTagCheckbox = document.getElementById('tag_other');
+
+            otherTagInput.style.display = 'none';
+
+            otherTagCheckbox.addEventListener('change', function() {
+                if (otherTagCheckbox.checked) {
+                    otherTagInput.style.display = 'inline-block';
+                    otherTagInput.focus();
+                } else {
+                    otherTagInput.style.display = 'none';
+                    otherTagInput.value = '';
+                }
+            });
+        });
+    </script>
 </body>
 </html>

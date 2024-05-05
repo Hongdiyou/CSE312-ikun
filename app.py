@@ -37,18 +37,26 @@ if not os.path.exists('media'):
 
 socketio = SocketIO(app)
 talisman = Talisman(app, content_security_policy=csp)
-@app.route('/')
-def index():
 
+
+@app.route('/', methods=['GET', 'POST'])
+def index():
     auth_token=flask.request.cookies.get('auth_token')
     current_user="Guest"
     if auth_token:
         user=user_collection.find_one({'auth_token': hashlib.sha256(auth_token.encode()).hexdigest()})
         if user:
             current_user=user['username']
-
-    posts=post_collection.find({},{'title': 1})
-    return flask.render_template('index.html',posts=posts,current_user=current_user)
+    tag = ['Technology', 'School', 'Art', 'Music', 'Game', 'Life', 'Food']
+    search = flask.request.form.get('search_query', '')
+    selected_tags = [tag.lower() for tag in flask.request.form.getlist('filter_tags')]
+    if not len(selected_tags)==0:
+        posts = post_collection.find({'tags': {'$in': [tag.lower() for tag in selected_tags]}})
+    else:
+        posts=post_collection.find({},{'title': 1})
+    if not search == '':
+        posts = post_collection.find({'$or': [{'title': {'$regex': search, '$options': 'i'}},{'content': {'$regex': search, '$options': 'i'}},{'tags': {'$regex': search, '$options': 'i'}}]})
+    return flask.render_template('index.html',posts=posts,current_user=current_user,tags=tag)
 
 @app.route('/static/img/<path:path>')
 def img(path):
@@ -74,8 +82,12 @@ def submit_post():
                 current_user=user['username']
         title=flask.request.form['title']
         content=flask.request.form['content']
-        
-
+        tags = flask.request.form.getlist('tags')
+        other_tag = flask.request.form.get('other_tag')
+        if other_tag:
+            tags.append(other_tag)
+        if 'other' in tags:
+            tags.remove('other')
         if 'image' in flask.request.files:
             image=flask.request.files['image']
             if image.filename != '':
@@ -84,7 +96,7 @@ def submit_post():
                     image.save(os.path.join('media', filename))
                     image_url=flask.url_for('uploaded_file', filename=filename)
                     content += f'<img src="{image_url}" alt="Uploaded Image">'
-        post_collection.insert_one({'title': title,'content': content,'user':current_user}).inserted_id
+        post_collection.insert_one({'title': title,'content': content,'user':current_user,'tags': tags}).inserted_id
         return flask.redirect(flask.url_for('index'))
 
 @app.route('/media/<filename>')
@@ -241,7 +253,6 @@ def place_bid():
             return flask.redirect(flask.url_for('auction'))
         else:
             return "Bid amount must be higher than the current bid", 400
-
 
 
 if __name__ == '__main__':
